@@ -215,41 +215,87 @@ def get_patient_feedback(feature, value, is_concern):
         False: f"Your {feature} level ({value}) is favorable."
     }).get(is_concern, f"Your {feature} ({value}) contributes to your health profile.")
 
+def get_risk_explanation(feature, value):
+    """
+    Provides clear explanations about patient's main risk factors.
+    """
+    risk_explanations = {
+        'age': f"Age {value} years - Natural risk factor that increases with time",
+        'sysBP': f"High blood pressure ({value} mmHg) - Major cardiovascular risk",
+        'diaBP': f"Elevated diastolic pressure ({value} mmHg) - Heart strain indicator",
+        'glucose': f"High blood sugar ({value} mg/dL) - Diabetes complication risk",
+        'BMI': f"High BMI ({value}) - Excess weight burdens the heart",
+        'totChol': f"High cholesterol ({value} mg/dL) - Artery blockage risk",
+        'heartRate': f"Elevated heart rate ({value} BPM) - Heart overworking",
+        'cigsPerDay': f"Smoking {value} cigarettes daily - Major heart damage",
+        'currentSmoker': "Current smoking habit - Direct heart toxin exposure",
+        'prevalentHyp': "Hypertension history - Chronic high blood pressure damage",
+        'BPMeds': "Blood pressure medication requirement - Controlled but present risk",
+        'prevalentStroke': "Previous stroke event - High recurrence risk",
+        'male': "Male gender - Higher baseline CVD risk",
+        'education': f"Education level {value} - May affect health management"
+    }
+    
+    return risk_explanations.get(feature, f"{feature}: {value} - Contributing risk factor")
+
+def get_health_recommendation(feature, value):
+    """
+    Provides actionable health recommendations based on risk factors.
+    """
+    recommendations = {
+        'age': "Schedule regular cardiac check-ups and screenings",
+        'sysBP': "Reduce sodium intake, exercise regularly, consider medication",
+        'diaBP': "Manage stress, limit alcohol, maintain healthy weight",
+        'glucose': "Follow diabetes management plan, monitor glucose closely",
+        'BMI': "Adopt heart-healthy diet, increase physical activity",
+        'totChol': "Reduce saturated fats, consider cholesterol-lowering medication",
+        'heartRate': "Practice stress reduction, ensure adequate sleep",
+        'cigsPerDay': "Quit smoking immediately - seek smoking cessation support",
+        'currentSmoker': "Join smoking cessation program, use nicotine replacement",
+        'prevalentHyp': "Take blood pressure medication as prescribed",
+        'BPMeds': "Continue medication, monitor blood pressure at home",
+        'prevalentStroke': "Follow neurologist's prevention plan strictly",
+        'male': "Be proactive about heart health screening",
+        'education': "Ask doctor to explain health information clearly"
+    }
+    
+    return recommendations.get(feature, f"Consult your doctor about managing {feature}")
+
 # Display Top Risk Factors Directly
 def display_risk_factors(shap_values, feature_names, input_df):
     """
-    Provides patient-friendly feedback based on the model's analysis.
+    Provides patients with clear information about their main risk factors and habits.
     """
     contributions = pd.Series(shap_values, index=feature_names)
     sorted_contributions = contributions.sort_values(ascending=False)
     
-    st.markdown("### Your Personalized Health Feedback:")
+    st.markdown("### Your Main Cardiovascular Risk Factors:")
     
-    col_concerns, col_strengths = st.columns(2)
+    col_risks, col_recommendations = st.columns(2)
     
-    with col_concerns:
-        st.error("**Areas of Concern:**")
+    with col_risks:
+        st.error("**Primary Risk Areas:**")
         # Get top 3 factors pushing the score up
         risk_drivers = sorted_contributions[sorted_contributions > 0].head(3)
         if not risk_drivers.empty:
             for feature, shap_val in risk_drivers.items():
                 patient_val = input_df[feature].values[0]
-                feedback = get_patient_feedback(feature, patient_val, True)
-                st.markdown(f"- {feedback}")
+                risk_info = get_risk_explanation(feature, patient_val)
+                st.markdown(f"- {risk_info}")
         else:
-            st.markdown("- No significant concerns identified.")
+            st.markdown("- No significant risk factors identified.")
 
-    with col_strengths:
-        st.success("**Positive Health Factors:**")
-        # Get top 3 factors pushing the score down
-        protectors = sorted_contributions[sorted_contributions < 0].tail(3).sort_values(ascending=True)
-        if not protectors.empty:
-            for feature, shap_val in protectors.items():
+    with col_recommendations:
+        st.info("**Health Recommendations:**")
+        # Get top 3 factors pushing the score up for targeted recommendations
+        risk_drivers = sorted_contributions[sorted_contributions > 0].head(3)
+        if not risk_drivers.empty:
+            for feature, shap_val in risk_drivers.items():
                 patient_val = input_df[feature].values[0]
-                feedback = get_patient_feedback(feature, patient_val, False)
-                st.markdown(f"- {feedback}")
+                recommendation = get_health_recommendation(feature, patient_val)
+                st.markdown(f"- {recommendation}")
         else:
-            st.markdown("- Focus on improving basic health metrics.")
+            st.markdown("- Continue maintaining your healthy lifestyle.")
 
 # Display the factors
 display_risk_factors(current_shap_values, input_data.columns, input_data)

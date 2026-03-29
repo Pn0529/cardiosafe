@@ -245,31 +245,36 @@ for threshold_candidate in np.arange(0.50, 0.99, 0.01):
 **Interface Module:**
 ```python
 # Streamlit UI components (from app.py)
-st.sidebar.header("Patient Data Input ")
+st.sidebar.header("Patient Data Input 🩺")
 age = st.sidebar.slider("Age (years)", min_value=30, max_value=90, value=50)
 sysBP = st.sidebar.slider("Systolic Blood Pressure (mmHg)", min_value=80, max_value=250, value=120)
 glucose = st.sidebar.slider("Blood Glucose Level (mg/dL)", min_value=50, max_value=400, value=120)
 
-# Patient-friendly feedback system
-def get_patient_feedback(feature, value, is_concern):
-    """Converts medical metrics into patient-friendly feedback messages."""
-    feedback_map = {
-        'sysBP': {
-            True: f"Your systolic blood pressure ({value} mmHg) is elevated. Consider consulting your doctor.",
-            False: f"Your systolic blood pressure ({value} mmHg) is within a healthy range."
-        },
-        'glucose': {
-            True: f"Your blood glucose level ({value} mg/dL) needs attention. Proper diabetes management is crucial.",
-            False: f"Your blood glucose level ({value} mg/dL) is well-managed."
-        }
-        # ... more patient-friendly messages for each health metric
+# Main risk factors information system
+def get_risk_explanation(feature, value):
+    """Provides clear explanations about patient's main risk factors."""
+    risk_explanations = {
+        'sysBP': f"High blood pressure ({value} mmHg) - Major cardiovascular risk",
+        'glucose': f"High blood sugar ({value} mg/dL) - Diabetes complication risk",
+        'cigsPerDay': f"Smoking {value} cigarettes daily - Major heart damage"
+        # ... more risk explanations for each health metric
     }
-    return feedback_map.get(feature, {...}).get(is_concern, default_message)
+    return risk_explanations.get(feature, f"{feature}: {value} - Contributing risk factor")
 
-# SHAP explainability with patient feedback
-st.markdown("### Your Personalized Health Feedback:")
-st.error("**Areas of Concern:**")
-st.success("**Positive Health Factors:**")
+def get_health_recommendation(feature, value):
+    """Provides actionable health recommendations based on risk factors."""
+    recommendations = {
+        'sysBP': "Reduce sodium intake, exercise regularly, consider medication",
+        'glucose': "Follow diabetes management plan, monitor glucose closely",
+        'cigsPerDay': "Quit smoking immediately - seek smoking cessation support"
+        # ... more recommendations for each health metric
+    }
+    return recommendations.get(feature, f"Consult your doctor about managing {feature}")
+
+# Display main risk factors to patients
+st.markdown("### Your Main Cardiovascular Risk Factors:")
+st.error("**Primary Risk Areas:**")
+st.info("**Health Recommendations:**")
 ```
 
 <br><br>
@@ -294,16 +299,18 @@ Features pushing risk higher (red): sysBP, age, glucose, prevalentHyp
 Features lowering risk (blue): normal BMI, lower heartRate
 ```
 
-**Figure 7.2: SHAP Individual Patient Waterfall Plot with Patient Feedback**
+**Figure 7.2: SHAP Individual Patient Risk Factor Analysis**
 ```
-[Individual Patient Explanation with Health Recommendations]
+[Individual Patient Risk Factor Breakdown]
 Base value: 0.15 (average risk)
-Health Concerns: 
-- High blood pressure (180 mmHg) - "Your systolic blood pressure is elevated. Consider consulting your doctor."
-- Age factor (65 years) - "Your age is a factor in cardiovascular health. Regular check-ups become more important."
-- Glucose level (180 mg/dL) - "Your blood glucose level needs attention. Proper diabetes management is crucial."
-Positive Factors:
-- Normal BMI (24.5) - "Your BMI is in a healthy range for your heart."
+Primary Risk Areas Identified:
+- High blood pressure (180 mmHg) - "Major cardiovascular risk"
+- Age factor (65 years) - "Natural risk factor that increases with time"
+- Glucose level (180 mg/dL) - "Diabetes complication risk"
+Health Recommendations:
+- "Reduce sodium intake, exercise regularly, consider medication"
+- "Schedule regular cardiac check-ups and screenings"
+- "Follow diabetes management plan, monitor glucose closely"
 Final Prediction: 0.90 (90% CVD risk)
 ```
 
