@@ -245,15 +245,31 @@ for threshold_candidate in np.arange(0.50, 0.99, 0.01):
 **Interface Module:**
 ```python
 # Streamlit UI components (from app.py)
-st.sidebar.header("Patient Data Input 🩺")
+st.sidebar.header("Patient Data Input ")
 age = st.sidebar.slider("Age (years)", min_value=30, max_value=90, value=50)
 sysBP = st.sidebar.slider("Systolic Blood Pressure (mmHg)", min_value=80, max_value=250, value=120)
 glucose = st.sidebar.slider("Blood Glucose Level (mg/dL)", min_value=50, max_value=400, value=120)
 
-# SHAP explainability
-explainer = shap.TreeExplainer(model)
-shap_vals = explainer.shap_values(input_scaled)
-st_shap(shap.force_plot(explainer.expected_value, current_shap_values, input_data.iloc[0, :]))
+# Patient-friendly feedback system
+def get_patient_feedback(feature, value, is_concern):
+    """Converts medical metrics into patient-friendly feedback messages."""
+    feedback_map = {
+        'sysBP': {
+            True: f"Your systolic blood pressure ({value} mmHg) is elevated. Consider consulting your doctor.",
+            False: f"Your systolic blood pressure ({value} mmHg) is within a healthy range."
+        },
+        'glucose': {
+            True: f"Your blood glucose level ({value} mg/dL) needs attention. Proper diabetes management is crucial.",
+            False: f"Your blood glucose level ({value} mg/dL) is well-managed."
+        }
+        # ... more patient-friendly messages for each health metric
+    }
+    return feedback_map.get(feature, {...}).get(is_concern, default_message)
+
+# SHAP explainability with patient feedback
+st.markdown("### Your Personalized Health Feedback:")
+st.error("**Areas of Concern:**")
+st.success("**Positive Health Factors:**")
 ```
 
 <br><br>
@@ -278,12 +294,16 @@ Features pushing risk higher (red): sysBP, age, glucose, prevalentHyp
 Features lowering risk (blue): normal BMI, lower heartRate
 ```
 
-**Figure 7.2: SHAP Individual Patient Waterfall Plot**
+**Figure 7.2: SHAP Individual Patient Waterfall Plot with Patient Feedback**
 ```
-[Individual Patient Explanation]
+[Individual Patient Explanation with Health Recommendations]
 Base value: 0.15 (average risk)
-Risk Contributors: +0.45 (high sysBP), +0.25 (age 65), +0.15 (glucose 180)
-Risk Reducers: -0.10 (normal BMI)
+Health Concerns: 
+- High blood pressure (180 mmHg) - "Your systolic blood pressure is elevated. Consider consulting your doctor."
+- Age factor (65 years) - "Your age is a factor in cardiovascular health. Regular check-ups become more important."
+- Glucose level (180 mg/dL) - "Your blood glucose level needs attention. Proper diabetes management is crucial."
+Positive Factors:
+- Normal BMI (24.5) - "Your BMI is in a healthy range for your heart."
 Final Prediction: 0.90 (90% CVD risk)
 ```
 

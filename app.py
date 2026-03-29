@@ -146,39 +146,110 @@ current_shap_values = shap_vals[0]
 # Display Force Plot directly in Streamlit using streamlit_shap
 st_shap(shap.force_plot(explainer.expected_value, current_shap_values, input_data.iloc[0, :]), height=150)
 
+# Patient-friendly feedback function
+def get_patient_feedback(feature, value, is_concern):
+    """
+    Converts medical metrics into patient-friendly feedback messages.
+    """
+    feedback_map = {
+        'age': {
+            True: f"Your age ({value}) is a factor in cardiovascular health. Regular check-ups become more important.",
+            False: f"Your age ({value}) is in a good range for cardiovascular health."
+        },
+        'sysBP': {
+            True: f"Your systolic blood pressure ({value} mmHg) is elevated. Consider consulting your doctor about blood pressure management.",
+            False: f"Your systolic blood pressure ({value} mmHg) is within a healthy range."
+        },
+        'diaBP': {
+            True: f"Your diastolic blood pressure ({value} mmHg) is elevated. Monitor this regularly.",
+            False: f"Your diastolic blood pressure ({value} mmHg) is well-controlled."
+        },
+        'glucose': {
+            True: f"Your blood glucose level ({value} mg/dL) needs attention. Proper diabetes management is crucial.",
+            False: f"Your blood glucose level ({value} mg/dL) is well-managed."
+        },
+        'BMI': {
+            True: f"Your BMI ({value}) suggests weight management could help your heart health.",
+            False: f"Your BMI ({value}) is in a healthy range for your heart."
+        },
+        'totChol': {
+            True: f"Your cholesterol level ({value} mg/dL) is elevated. Consider dietary changes and discuss with your doctor.",
+            False: f"Your cholesterol level ({value} mg/dL) is well-controlled."
+        },
+        'heartRate': {
+            True: f"Your heart rate ({value} BPM) is elevated. Consider stress management and regular exercise.",
+            False: f"Your heart rate ({value} BPM) indicates good cardiovascular fitness."
+        },
+        'cigsPerDay': {
+            True: f"Smoking ({value} cigarettes/day) significantly impacts heart health. Quitting is strongly recommended.",
+            False: f"Being smoke-free greatly benefits your heart health."
+        },
+        'currentSmoker': {
+            True: "Smoking status is a major concern for heart health. Consider quitting programs.",
+            False: "Being a non-smoker protects your heart."
+        },
+        'prevalentHyp': {
+            True: "History of hypertension requires careful monitoring and medication adherence.",
+            False: "No hypertension history is positive for heart health."
+        },
+        'BPMeds': {
+            True: "Blood pressure medications are working - continue as prescribed.",
+            False: "No blood pressure medication needed currently."
+        },
+        'prevalentStroke': {
+            True: "Stroke history requires careful cardiovascular monitoring.",
+            False: "No stroke history is favorable."
+        },
+        'male': {
+            True: "Male gender has different cardiovascular risk factors - stay proactive.",
+            False: "Female cardiovascular health has unique considerations."
+        },
+        'education': {
+            True: f"Education level ({value}) may affect health literacy - seek clear medical guidance.",
+            False: f"Education level ({value}) supports good health understanding."
+        }
+    }
+    
+    return feedback_map.get(feature, {
+        True: f"Your {feature} level ({value}) needs medical attention.",
+        False: f"Your {feature} level ({value}) is favorable."
+    }).get(is_concern, f"Your {feature} ({value}) contributes to your health profile.")
+
 # Display Top Risk Factors Directly
 def display_risk_factors(shap_values, feature_names, input_df):
     """
-    Simply displays the top factors mathematically affecting the current patient.
+    Provides patient-friendly feedback based on the model's analysis.
     """
     contributions = pd.Series(shap_values, index=feature_names)
     sorted_contributions = contributions.sort_values(ascending=False)
     
-    st.markdown("### Primary Factors Affecting Your Score:")
+    st.markdown("### Your Personalized Health Feedback:")
     
-    col_risk, col_protect = st.columns(2)
+    col_concerns, col_strengths = st.columns(2)
     
-    with col_risk:
-        st.error("**Factors Increasing Risk:**")
+    with col_concerns:
+        st.error("**Areas of Concern:**")
         # Get top 3 factors pushing the score up
         risk_drivers = sorted_contributions[sorted_contributions > 0].head(3)
         if not risk_drivers.empty:
             for feature, shap_val in risk_drivers.items():
                 patient_val = input_df[feature].values[0]
-                st.markdown(f"- **{feature}** (Patient Value: {patient_val})")
+                feedback = get_patient_feedback(feature, patient_val, True)
+                st.markdown(f"- {feedback}")
         else:
-            st.markdown("- None significant.")
+            st.markdown("- No significant concerns identified.")
 
-    with col_protect:
-        st.success("**Factors Lowering Risk:**")
+    with col_strengths:
+        st.success("**Positive Health Factors:**")
         # Get top 3 factors pushing the score down
         protectors = sorted_contributions[sorted_contributions < 0].tail(3).sort_values(ascending=True)
         if not protectors.empty:
             for feature, shap_val in protectors.items():
                 patient_val = input_df[feature].values[0]
-                st.markdown(f"- **{feature}** (Patient Value: {patient_val})")
+                feedback = get_patient_feedback(feature, patient_val, False)
+                st.markdown(f"- {feedback}")
         else:
-            st.markdown("- None significant.")
+            st.markdown("- Focus on improving basic health metrics.")
 
 # Display the factors
 display_risk_factors(current_shap_values, input_data.columns, input_data)
